@@ -1,0 +1,4 @@
+interface:
+  display_name: "照片生成桌宠"
+  short_description: "从人物或动物照片生成 Windows 或 macOS Q版桌宠"
+  default_prompt: "Use $build-photo-desktop-pet to turn my uploaded person or animal photo into a polished installable Windows or macOS desktop pet."

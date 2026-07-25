@@ -1,0 +1,41 @@
+{
+  "$schema": "https://schema.tauri.app/config/2",
+  "productName": "__PRODUCT_NAME__",
+  "version": "__VERSION__",
+  "identifier": "__BUNDLE_ID__",
+  "build": {
+    "beforeDevCommand": "npm run dev",
+    "devUrl": "http://localhost:1420",
+    "beforeBuildCommand": "npm run build",
+    "frontendDist": "../dist"
+  },
+  "app": {
+    "windows": [
+      {
+        "label": "main",
+        "create": false,
+        "incognito": true,
+        "title": "__PRODUCT_NAME__",
+        "width": 357,
+        "height": 349,
+        "minWidth": 210,
+        "minHeight": 205,
+        "transparent": true,
+        "decorations": false,
+        "alwaysOnTop": true,
+        "resizable": false,
+        "skipTaskbar": true,
+        "shadow": false,
+        "focus": false,
+        "center": false
+      }
+    ],
+    "security": {
+      "csp": null
+    }
+  },
+  "bundle": {
+    "active": true,
+    "icon": ["icons/icon.png"]
+  }
+}

@@ -1,0 +1,47 @@
+[package]
+name = "__PRODUCT_SLUG__"
+version = "__VERSION__"
+description = "A warm chibi desktop pet for focused computer work"
+authors = ["Codex"]
+edition = "2021"
+
+[lib]
+name = "__RUST_CRATE___lib"
+crate-type = ["staticlib", "cdylib", "rlib"]
+
+[build-dependencies]
+tauri-build = { version = "2", features = [] }
+
+[dependencies]
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+tauri = { version = "2", features = ["tray-icon", "image-png"] }
+
+[target.'cfg(windows)'.dependencies]
+windows = { version = "0.61", features = [
+  "ApplicationModel",
+  "Foundation",
+  "Foundation_Collections",
+  "UI_Notifications",
+  "UI_Notifications_Management"
+] }
+windows-sys = { version = "0.61", features = [
+  "Win32_Foundation",
+  "Win32_Graphics_Gdi",
+  "Win32_Security",
+  "Win32_System_Diagnostics_ToolHelp",
+  "Win32_System_LibraryLoader",
+  "Win32_System_Registry",
+  "Win32_System_SystemInformation",
+  "Win32_System_Threading",
+  "Win32_UI_Input_KeyboardAndMouse",
+  "Win32_UI_Accessibility",
+  "Win32_UI_WindowsAndMessaging"
+] }
+
+[profile.release]
+opt-level = "z"
+lto = true
+codegen-units = 1
+panic = "abort"
+strip = true
