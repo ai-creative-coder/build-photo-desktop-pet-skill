@@ -103,9 +103,13 @@ At the 7 px threshold, immediately enter `drag` and keep that state active for t
 
 Random state is a one-cycle preview, not a persistent override. Right-click settings should provide random preview, notification access, autostart, size and exit. Keep the usage guide beside the installer, not in the pet menu.
 
+Treat message reminders as a persistent application preference separate from operating-system notification permission. The menu item must remain interactive after system access is allowed and must switch between `消息提醒：已开启` and `消息提醒：已关闭`. While disabled, ignore incoming notification/popup sequence changes and advance the stored sequence so re-enabling does not replay messages received while disabled. Request system access only when needed for the enabled path; other interactions must remain usable when access is denied or unavailable.
+
 Place reminder bubbles in a fixed UI container at top-right (`top:8px; right:8px`). Do not position them from per-frame alpha bounds. Apply one `--pet-ui-scale` directly to the `384x341` character viewport and to bubble typography, padding, border, radius and shadow; shrinking only the native window is not proof that the character itself reached the selected scale. The supported range is 50%–100% with 85% default. Test 50%, 85% and 100% without covering the face, and set native minimum window dimensions to the 50% size so the operating system does not silently clamp it.
 
 The right-click menu must appear in reserved transparent space above and to the right of the character, never over the subject. Temporarily expand the native transparent window upward while keeping its bottom-right screen anchor fixed, render the menu at the reserved area's top-right, hide any speech bubble while the menu is open, and restore the original pet window size when it closes. Keep the menu readable at 50% instead of scaling it down with the pet.
+
+When a pointer press on the pet closes the menu and immediately begins a drag, await the native resize/position result and rebase the drag origin to that returned physical window position before applying any pointer delta. Do not move from a cached pre-close top-left coordinate. The first post-menu drag must preserve the character's screen anchor and follow only the user's actual pointer displacement.
 
 Do not render a floor/ground oval, character `drop-shadow`, contact shadow or reflection beneath any state. Keep menu and speech-bubble shadows only when needed for UI readability; they must not appear under the character.
 

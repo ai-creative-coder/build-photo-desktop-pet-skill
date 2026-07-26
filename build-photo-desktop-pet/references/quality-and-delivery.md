@@ -94,7 +94,9 @@ Write `output/reviews/release-quality-decision.json` with:
     "no_deformation_or_fragments": true,
     "no_floor_or_character_drop_shadow": true,
     "actual_size_loop_reviewed": true,
-    "native_runtime_reviewed": true
+    "native_runtime_reviewed": true,
+    "post_menu_drag_anchor_stable": true,
+    "message_notification_toggle_works": true
   }
 }
 ```
@@ -111,6 +113,8 @@ Set `ok: false` when any state shows residual/double characters, root shaking, u
 - transparent always-on-top window appears at bottom-right without console;
 - click, real drag, right-click, size, tray, autostart and exit work;
 - drag begins at 7 px, visibly communicates effort/cheering and encouragement, remains active during movement and does not restart on release;
+- after opening the right-click menu, the first direct drag closes the menu without a position jump and moves only by the measured pointer delta;
+- the message-reminder menu item remains clickable after access is allowed, persists on/off state, suppresses new-message reactions while off and resumes without replaying events received while disabled;
 - no state has a character/floor shadow in generated pixels or runtime CSS;
 - automatic state transitions and highest-priority message restoration work;
 - each requested platform passes its native runtime acceptance;
@@ -145,6 +149,7 @@ Test:
 - repeated click restarts greeting at frame 1;
 - press/release without movement is click, not drag;
 - drag changes real window coordinates;
+- the first drag immediately after opening the right-click menu keeps the pet's pre-drag screen anchor and applies no stale menu-window offset;
 - random preview plays one cycle and yields to detected state;
 - same detected state does not restart repeatedly;
 - real typing in a recognized coding context activates coding; a pause over 30 s activates thinking; task/debugger signals activate their matching motion;
@@ -152,6 +157,7 @@ Test:
 - bubble stays top-right and scales with the pet;
 - native scale limits and window minimum size allow 50%, 85% and 100% exactly, and the visible `384x341` character viewport—not only the native window—matches the selected percentage;
 - the right-click menu opens above and to the right of the subject in reserved transparent space at 50%, 85% and 100%, never covers the character, preserves the character's bottom-right screen anchor and restores the original window size on close;
+- the message-reminder menu item toggles between `消息提醒：已开启` and `消息提醒：已关闭`, remains operable after Windows access is allowed, persists across restart and suppresses message animation while disabled;
 - the current-version `release-quality-decision.json` passes `scripts/validate_release_review.py`;
 - 15/50/60-minute timers and 5/10-minute resets are logically separate.
 

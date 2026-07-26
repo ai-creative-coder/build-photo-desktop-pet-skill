@@ -25,6 +25,7 @@ const AUTO_STRETCH_DELAY_MS = !appWindow && Number.isFinite(previewStretchDelay)
 const PREVIEW_SEQUENCE = PET_MOTIONS.map((motion) => motion.id);
 const CATEGORY_ORDER: PetMotionCategory[] = ["default", "interaction", "work", "event", "reminder"];
 const PET_SCALE_STORAGE_KEY = "__PRODUCT_SLUG__.pet-scale.v1";
+const MESSAGE_NOTIFICATIONS_STORAGE_KEY = "__PRODUCT_SLUG__.message-notifications.v1";
 const MIN_PET_SCALE = 50;
 const MAX_PET_SCALE = 100;
 const DEFAULT_PET_SCALE = 85;
@@ -34,6 +35,10 @@ function readSavedPetScale() {
   return Number.isFinite(saved) && saved >= MIN_PET_SCALE && saved <= MAX_PET_SCALE
     ? saved
     : DEFAULT_PET_SCALE;
+}
+
+function readSavedMessageNotifications() {
+  return window.localStorage.getItem(MESSAGE_NOTIFICATIONS_STORAGE_KEY) !== "off";
 }
 
 type PreviewBackground = "checker" | "light" | "dark";
@@ -53,6 +58,17 @@ interface SystemActivitySnapshot {
 
 type NotificationAccess = "checking" | "allowed" | "denied" | "unspecified" | "unavailable";
 
+interface PointerInteractionState {
+  pointerId: number;
+  startScreenX: number;
+  startScreenY: number;
+  latestScreenX: number;
+  latestScreenY: number;
+  dragging: boolean;
+  windowX: number | null;
+  windowY: number | null;
+}
+
 export default function IdlePreview() {
   const [motion, setMotion] = useState<PetMotionId>("idle");
   const [motionRun, setMotionRun] = useState(0);
@@ -62,6 +78,7 @@ export default function IdlePreview() {
   const [petScale, setPetScale] = useState(readSavedPetScale);
   const [contextMenuOpen, setContextMenuOpen] = useState(false);
   const [notificationAccess, setNotificationAccess] = useState<NotificationAccess>("checking");
+  const [messageNotificationsEnabled, setMessageNotificationsEnabled] = useState(readSavedMessageNotifications);
   const [autoStartEnabled, setAutoStartEnabled] = useState(true);
   const motionRef = useRef<PetMotionId>(motion);
   const baseMotionRef = useRef<PetMotionId>("idle");
@@ -70,13 +87,7 @@ export default function IdlePreview() {
   const typingTimer = useRef<number | null>(null);
   const thinkingTimer = useRef<number | null>(null);
   const stretchTimer = useRef<number | null>(null);
-  const pointerStart = useRef<{
-    x: number;
-    y: number;
-    dragging: boolean;
-    windowX: number | null;
-    windowY: number | null;
-  } | null>(null);
+  const pointerStart = useRef<PointerInteractionState | null>(null);
   const nativeWindowPosition = useRef<{ x: number; y: number } | null>(null);
   const nativeScaleFactor = useRef(window.devicePixelRatio || 1);
   const pendingWindowPosition = useRef<{ x: number; y: number } | null>(null);
@@ -109,9 +120,17 @@ export default function IdlePreview() {
     renderMotion(next);
   }, [renderMotion]);
 
-  const setContextMenuVisibility = useCallback((open: boolean) => {
+  const setContextMenuVisibility = useCallback(async (open: boolean) => {
     setContextMenuOpen(open);
-    if (appWindow) void invoke("set_context_menu_open", { open }).catch(() => undefined);
+    if (!appWindow) return nativeWindowPosition.current;
+    try {
+      const [x, y] = await invoke<[number, number]>("set_context_menu_open", { open });
+      const position = { x, y };
+      nativeWindowPosition.current = position;
+      return position;
+    } catch {
+      return appWindow.outerPosition().catch(() => nativeWindowPosition.current);
+    }
   }, []);
 
   const changePetScale = useCallback((nextScale: number) => {
@@ -216,7 +235,7 @@ export default function IdlePreview() {
     void invoke("position_pet_bottom_right").catch(() => undefined);
     void invoke<NotificationAccess>("notification_access_status").then(async (status) => {
       setNotificationAccess(status);
-      if (status === "unspecified") {
+      if (status === "unspecified" && readSavedMessageNotifications()) {
         const requested = await invoke<NotificationAccess>("request_notification_access");
         setNotificationAccess(requested);
       }
@@ -277,7 +296,9 @@ export default function IdlePreview() {
         const workResult = evaluateWorkActivity(workSession.current, snapshot, now);
         setNotificationAccess(snapshot.notificationAccess);
         setWorkMotion(workResult.motion);
-        if (snapshot.messageSignalSequence > lastMessageSignalSequence.current) {
+        if (!messageNotificationsEnabled) {
+          lastMessageSignalSequence.current = snapshot.messageSignalSequence;
+        } else if (snapshot.messageSignalSequence > lastMessageSignalSequence.current) {
           if (playTemporary("new-message")) {
             lastMessageSignalSequence.current = snapshot.messageSignalSequence;
           }
@@ -304,7 +325,7 @@ export default function IdlePreview() {
       cancelled = true;
       window.clearInterval(timer);
     };
-  }, [playTemporary, setWorkMotion]);
+  }, [messageNotificationsEnabled, playTemporary, setWorkMotion]);
 
   useEffect(() => {
     if (!appWindow) return;
@@ -360,15 +381,18 @@ export default function IdlePreview() {
     playTemporary("click");
   };
 
-  const enableMessageNotifications = useCallback(async () => {
-    if (!appWindow || notificationAccess === "unavailable") return;
+  const toggleMessageNotifications = useCallback(async () => {
+    const enabled = !messageNotificationsEnabled;
+    setMessageNotificationsEnabled(enabled);
+    window.localStorage.setItem(MESSAGE_NOTIFICATIONS_STORAGE_KEY, enabled ? "on" : "off");
+    if (!enabled || !appWindow || ["allowed", "unavailable", "checking"].includes(notificationAccess)) return;
     try {
       const status = await invoke<NotificationAccess>("request_notification_access");
       setNotificationAccess(status);
     } catch {
       setNotificationAccess("unavailable");
     }
-  }, [notificationAccess]);
+  }, [messageNotificationsEnabled, notificationAccess]);
 
   const toggleAutoStart = useCallback(async () => {
     if (!appWindow) return;
@@ -380,31 +404,10 @@ export default function IdlePreview() {
     }
   }, [autoStartEnabled]);
 
-  const beginPointerInteraction = (event: React.PointerEvent<HTMLButtonElement>) => {
-    if (event.button !== 0) return;
-    notePetInteraction();
-    const position = nativeWindowPosition.current;
-    pointerStart.current = {
-      x: event.screenX,
-      y: event.screenY,
-      dragging: false,
-      windowX: position?.x ?? null,
-      windowY: position?.y ?? null,
-    };
-    event.currentTarget.setPointerCapture(event.pointerId);
-  };
-
-  const movePointerInteraction = (event: React.PointerEvent<HTMLButtonElement>) => {
-    const start = pointerStart.current;
-    if (!start) return;
-    const deltaX = event.screenX - start.x;
-    const deltaY = event.screenY - start.y;
-    if (!start.dragging && Math.hypot(deltaX, deltaY) >= 7) {
-      start.dragging = true;
-      beginDragCheer();
-    }
+  const schedulePointerWindowMove = (start: PointerInteractionState) => {
     if (!appWindow || !start.dragging || start.windowX === null || start.windowY === null) return;
-
+    const deltaX = start.latestScreenX - start.startScreenX;
+    const deltaY = start.latestScreenY - start.startScreenY;
     const factor = nativeScaleFactor.current;
     pendingWindowPosition.current = {
       x: Math.round(start.windowX + deltaX * factor),
@@ -420,6 +423,49 @@ export default function IdlePreview() {
         console.error("桌宠窗口移动失败", error);
       });
     });
+  };
+
+  const beginPointerInteraction = (event: React.PointerEvent<HTMLButtonElement>) => {
+    if (event.button !== 0) return;
+    notePetInteraction();
+    const pointerId = event.pointerId;
+    const menuWasOpen = contextMenuOpen;
+    pointerStart.current = {
+      pointerId,
+      startScreenX: event.screenX,
+      startScreenY: event.screenY,
+      latestScreenX: event.screenX,
+      latestScreenY: event.screenY,
+      dragging: false,
+      windowX: null,
+      windowY: null,
+    };
+    event.currentTarget.setPointerCapture(event.pointerId);
+    void (async () => {
+      const position = menuWasOpen
+        ? await setContextMenuVisibility(false)
+        : await appWindow?.outerPosition().catch(() => nativeWindowPosition.current);
+      const start = pointerStart.current;
+      if (!start || start.pointerId !== pointerId || !position) return;
+      start.windowX = position.x;
+      start.windowY = position.y;
+      nativeWindowPosition.current = position;
+      schedulePointerWindowMove(start);
+    })();
+  };
+
+  const movePointerInteraction = (event: React.PointerEvent<HTMLButtonElement>) => {
+    const start = pointerStart.current;
+    if (!start) return;
+    start.latestScreenX = event.screenX;
+    start.latestScreenY = event.screenY;
+    const deltaX = event.screenX - start.startScreenX;
+    const deltaY = event.screenY - start.startScreenY;
+    if (!start.dragging && Math.hypot(deltaX, deltaY) >= 7) {
+      start.dragging = true;
+      beginDragCheer();
+    }
+    schedulePointerWindowMove(start);
   };
 
   const endPointerInteraction = (event: React.PointerEvent<HTMLButtonElement>) => {
@@ -440,11 +486,11 @@ export default function IdlePreview() {
 
   const openContextMenu = (event: React.MouseEvent<HTMLElement>) => {
     event.preventDefault();
-    setContextMenuVisibility(true);
+    void setContextMenuVisibility(true);
   };
 
   const exitPet = () => {
-    setContextMenuVisibility(false);
+    void setContextMenuVisibility(false);
     if (appWindow) void invoke("quit_app");
   };
 
@@ -457,7 +503,10 @@ export default function IdlePreview() {
         data-motion={motion}
         onContextMenu={openContextMenu}
         onPointerDown={(event) => {
-          if (contextMenuOpen && !(event.target as HTMLElement).closest(".pet-context-menu")) setContextMenuVisibility(false);
+          const target = event.target as HTMLElement;
+          if (contextMenuOpen && !target.closest(".pet-context-menu, .integrated-pet-button")) {
+            void setContextMenuVisibility(false);
+          }
         }}
       >
         {showBubble && !contextMenuOpen && (
@@ -482,14 +531,12 @@ export default function IdlePreview() {
             </button>
             <button
               type="button"
-              role="menuitem"
-              onClick={enableMessageNotifications}
-              disabled={notificationAccess === "allowed" || notificationAccess === "unavailable"}
+              role="menuitemcheckbox"
+              aria-checked={messageNotificationsEnabled}
+              onClick={toggleMessageNotifications}
             >
               <span aria-hidden="true">🔔</span>{" "}
-              {notificationAccess === "allowed" ? "消息提醒已启用" :
-                notificationAccess === "denied" ? "重新授权消息提醒" :
-                  notificationAccess === "unavailable" ? "系统不支持消息提醒" : "启用消息提醒"}
+              {messageNotificationsEnabled ? "消息提醒：已开启" : "消息提醒：已关闭"}
             </button>
             <button type="button" role="menuitemcheckbox" aria-checked={autoStartEnabled} onClick={toggleAutoStart}>
               <span aria-hidden="true">🚀</span>{" "}

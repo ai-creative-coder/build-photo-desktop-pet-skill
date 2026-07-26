@@ -251,6 +251,20 @@ fn resize_pet_window(
     Ok(safe_scale)
 }
 
+fn bottom_right_anchored_position(
+    old_x: i32,
+    old_y: i32,
+    old_width: i32,
+    old_height: i32,
+    new_width: i32,
+    new_height: i32,
+) -> (i32, i32) {
+    (
+        old_x + old_width - new_width,
+        old_y + old_height - new_height,
+    )
+}
+
 #[tauri::command]
 fn get_pet_scale(app: AppHandle) -> u16 {
     read_saved_pet_scale(&app)
@@ -268,7 +282,7 @@ fn set_pet_scale(app: AppHandle, scale: u16, context_menu_open: bool) -> Result<
 }
 
 #[tauri::command]
-fn set_context_menu_open(app: AppHandle, open: bool) -> Result<(), String> {
+fn set_context_menu_open(app: AppHandle, open: bool) -> Result<[i32; 2], String> {
     let window = app
         .get_webview_window("main")
         .ok_or_else(|| "未找到桌宠窗口".to_string())?;
@@ -276,12 +290,18 @@ fn set_context_menu_open(app: AppHandle, open: bool) -> Result<(), String> {
     let old_size = window.outer_size().map_err(|error| error.to_string())?;
     resize_pet_window(&window, read_saved_pet_scale(&app), open)?;
     let new_size = window.outer_size().map_err(|error| error.to_string())?;
+    let (x, y) = bottom_right_anchored_position(
+        old_position.x,
+        old_position.y,
+        old_size.width as i32,
+        old_size.height as i32,
+        new_size.width as i32,
+        new_size.height as i32,
+    );
     window
-        .set_position(PhysicalPosition::new(
-            old_position.x + old_size.width as i32 - new_size.width as i32,
-            old_position.y + old_size.height as i32 - new_size.height as i32,
-        ))
-        .map_err(|error| error.to_string())
+        .set_position(PhysicalPosition::new(x, y))
+        .map_err(|error| error.to_string())?;
+    Ok([x, y])
 }
 
 #[tauri::command]
@@ -1450,9 +1470,9 @@ fn request_notification_access() -> Result<String, String> {
 #[cfg(all(test, windows))]
 mod tests {
     use super::{
-        auto_start_command, clamp_pet_scale, foreground_kind, is_legacy_message_process,
-        is_message_notification_source, notification_identity, pet_window_dimensions,
-        title_indicates_unread_message,
+        auto_start_command, bottom_right_anchored_position, clamp_pet_scale, foreground_kind,
+        is_legacy_message_process, is_message_notification_source, notification_identity,
+        pet_window_dimensions, title_indicates_unread_message,
     };
 
     #[test]
@@ -1470,6 +1490,14 @@ mod tests {
         assert_eq!(pet_window_dimensions(50, false), (210.0, 205.0));
         assert_eq!(pet_window_dimensions(50, true), (224.0, 497.0));
         assert_eq!(pet_window_dimensions(100, true), (420.0, 702.0));
+    }
+
+    #[test]
+    fn menu_resize_preserves_bottom_right_anchor_in_both_directions() {
+        let expanded = bottom_right_anchored_position(100, 492, 357, 349, 357, 641);
+        assert_eq!(expanded, (100, 200));
+        let restored = bottom_right_anchored_position(expanded.0, expanded.1, 357, 641, 357, 349);
+        assert_eq!(restored, (100, 492));
     }
 
     #[test]
