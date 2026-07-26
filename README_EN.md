@@ -2,16 +2,14 @@
 
 English | [简体中文](README.md)
 
-Turn one photo of a person or animal into an installable desktop pet. Designed for Codex, this Skill covers chibi character production, 13 animated states, transparent-asset validation, Tauri integration, native runtime acceptance, and Windows/macOS release packaging.
+Turn one photo of a person or animal into an installable chibi desktop pet. The character keeps the photo's most recognizable visual traits and accompanies the user through work, study, and breaks with expressive actions.
 
 ## Features
 
-- Derives the subject only from the current user's uploaded photo and never reuses another user's photo or character assets.
-- Produces a proportion-validated chibi base and a six-view reference board.
-- Generates and reviews a separate 12-frame transparent animation for each of 13 states.
-- Detects ghosting, bobbing, irregular scaling, cropping, deformation, fragments, and unwanted shadows.
-- Supports click greetings, drag encouragement, work activity, message alerts, and break reminders.
-- Keeps the context menu away from the character and supports a 50%–100% pet scale range.
+- Designs a personalized chibi character from the user's uploaded photo while preserving recognizable hair, clothing, accessories, markings, and other defining traits.
+- Includes 13 states such as idle, click greetings, drag encouragement, thinking, coding, debugging, task completion, hydration, and break reminders, with actions and expressions that react naturally to user activity.
+- Supports click interaction and free dragging; the context menu stays above and to the right without covering the pet, and the pet can be resized from 50% to 100%.
+- Lets users turn message reminders on or off at any time and remembers their preference.
 - Builds a lightweight desktop application with React, Vite, and Tauri.
 - Supports Windows x64 NSIS delivery; macOS releases must be built on macOS.
 - Uses Codex built-in ImageGen by default and provides an adapter for an explicitly approved external image provider.
@@ -49,13 +47,12 @@ Upload a photo of a person or animal in Codex, then ask:
 $build-photo-desktop-pet Turn this photo into a desktop pet and produce a Windows installer.
 ```
 
-By default, the Skill will:
+The Skill will:
 
-1. Check the image, ImageGen, Python, Node.js, Rust, and target-native build tools.
-2. Generate and review the base character, turnaround reference, and program icon.
-3. Produce all 13 state animations independently.
-4. Test interaction, transparency, menu placement, and scaling in the native Tauri window.
-5. Build an installer only after the final quality gates pass.
+1. Create a chibi base character and application icon from the photo.
+2. Produce all 13 desktop-pet animation states.
+3. Integrate click, drag, resize, message, and work-context interactions.
+4. Produce an installable desktop-pet package for the current platform.
 
 ## Requirements
 
@@ -84,13 +81,11 @@ See:
 
 `build-photo-desktop-pet/references/image-provider-configuration.md`
 
-## Privacy and Quality Guarantees
+## Privacy
 
 - Does not read typed text, clipboard contents, chats, document contents, or screen pixels.
 - Uses the source photo only for the current project; it is excluded from the Skill package, reusable template, and final installer.
 - Never uses another user's character, image, private path, or appearance prompt as an example or fallback.
-- Re-runs release review for the exact encoded 13-state asset set and native runtime on every build.
-- Blocks packaging when ghosting, shaking, irregular scaling, cropping, discontinuity, deformation, fragments, or character/floor shadows remain.
 
 ## Repository Layout
 
@@ -107,19 +102,6 @@ See:
 ```
 
 The README files live at the repository root and are not part of the Codex Skill runtime context. Only the `build-photo-desktop-pet` directory needs to be installed.
-
-## Validation
-
-```powershell
-python .\build-photo-desktop-pet\scripts\audit_skill_privacy.py `
-  .\build-photo-desktop-pet
-
-python .\build-photo-desktop-pet\scripts\test_skill_guards.py
-
-$env:PYTHONUTF8 = "1"
-python "$env:USERPROFILE\.codex\skills\.system\skill-creator\scripts\quick_validate.py" `
-  .\build-photo-desktop-pet
-```
 
 ## Platform Notes
 

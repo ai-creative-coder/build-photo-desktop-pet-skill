@@ -202,6 +202,8 @@ Verify in the Tauri app, not only the browser:
 - transparent, borderless, always-on-top bottom-right launch with no console window;
 - click under 7 px triggers greeting; real movement at least 7 px moves the window and triggers cheer;
 - right-click random preview, size, notification access, autostart and exit;
+- after opening the right-click menu, the first direct drag closes it without any stale resize offset or anchor jump;
+- the persistent message-reminder menu item remains clickable after access is allowed, supports explicit on/off selection, suppresses message reactions while off and does not replay disabled-period signals when re-enabled;
 - bubble fixed at top-right and scaled with the pet at 50%, 85% and 100%; confirm native window minimum dimensions permit the 50% size;
 - right-click menu opens in reserved transparent space above and to the right of the subject, never over the character; closing it restores the pet window without moving the character's bottom-right screen anchor;
 - work starts from real input, not merely opening a file;

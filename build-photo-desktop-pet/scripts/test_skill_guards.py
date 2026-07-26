@@ -15,6 +15,7 @@ from validate_release_review import CHECKS, STATES, validate_review
 
 
 SCRIPTS = Path(__file__).resolve().parent
+SKILL_ROOT = SCRIPTS.parent
 
 
 class SkillGuardTests(unittest.TestCase):
@@ -87,6 +88,27 @@ class SkillGuardTests(unittest.TestCase):
                 "review.checks.no_ghosting must be true",
                 validate_review(project),
             )
+            review["checks"]["no_ghosting"] = True
+            del review["checks"]["post_menu_drag_anchor_stable"]
+            review_path.write_text(json.dumps(review), encoding="utf-8")
+            self.assertIn(
+                "review.checks.post_menu_drag_anchor_stable must be true",
+                validate_review(project),
+            )
+
+    def test_template_guards_post_menu_drag_and_message_toggle(self) -> None:
+        preview = (
+            SKILL_ROOT / "assets" / "desktop-pet-template" / "src" / "IdlePreview.tsx"
+        ).read_text(encoding="utf-8")
+        native = (
+            SKILL_ROOT / "assets" / "desktop-pet-template" / "src-tauri" / "src" / "lib.rs"
+        ).read_text(encoding="utf-8")
+        self.assertIn('invoke<[number, number]>("set_context_menu_open"', preview)
+        self.assertIn("schedulePointerWindowMove(start)", preview)
+        self.assertIn('messageNotificationsEnabled ? "消息提醒：已开启" : "消息提醒：已关闭"', preview)
+        self.assertNotIn('disabled={notificationAccess === "allowed"', preview)
+        self.assertIn("fn bottom_right_anchored_position(", native)
+        self.assertIn('fn set_context_menu_open(app: AppHandle, open: bool) -> Result<[i32; 2], String>', native)
 
 
 if __name__ == "__main__":

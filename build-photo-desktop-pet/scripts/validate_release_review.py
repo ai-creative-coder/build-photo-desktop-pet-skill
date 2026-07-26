@@ -23,6 +23,8 @@ CHECKS = {
     "no_floor_or_character_drop_shadow",
     "actual_size_loop_reviewed",
     "native_runtime_reviewed",
+    "post_menu_drag_anchor_stable",
+    "message_notification_toggle_works",
 }
 
 
