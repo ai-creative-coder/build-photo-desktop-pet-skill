@@ -2,7 +2,7 @@
 
 English | [简体中文](README.md)
 
-Turn one photo of a person or animal into an installable chibi desktop pet. The character keeps the photo's most recognizable visual traits and accompanies the user through work, study, and breaks with expressive actions.
+Turn one photo of a person  into an installable chibi desktop pet. The character keeps the photo's most recognizable visual traits and accompanies the user through work, study, and breaks with expressive actions.
 
 ## Features
 
