@@ -19,6 +19,10 @@ if (-not (Test-Path -LiteralPath $specPath)) {
     throw "Missing project specification: $specPath"
 }
 $spec = Get-Content -LiteralPath $specPath -Encoding UTF8 -Raw | ConvertFrom-Json
+& python (Join-Path $PSScriptRoot "validate_localization.py") --project $project
+if ($LASTEXITCODE -ne 0) {
+    throw "Language confirmation or localization review failed. Do not package this desktop pet."
+}
 if ($spec.custom_icon_ready -ne $true) {
     throw "Project icons still use the bundled generic chibi placeholder. Run generate_project_icons.py with the approved standing RGBA base before packaging."
 }

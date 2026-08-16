@@ -12,6 +12,7 @@ import unittest
 from pathlib import Path
 
 from validate_release_review import CHECKS, STATES, validate_review
+from validate_localization import REQUIRED_FILES, REQUIRED_SURFACES, validate_localization
 
 
 SCRIPTS = Path(__file__).resolve().parent
@@ -19,6 +20,40 @@ SKILL_ROOT = SCRIPTS.parent
 
 
 class SkillGuardTests(unittest.TestCase):
+    def test_localization_gate_requires_matching_complete_decision(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            project = Path(directory)
+            for relative in REQUIRED_FILES:
+                path = project / relative
+                path.parent.mkdir(parents=True, exist_ok=True)
+                path.write_text("localized English copy\n", encoding="utf-8")
+            (project / "output" / "reviews").mkdir(parents=True)
+            spec = {
+                "version": "2.0.0",
+                "language_confirmed": True,
+                "pet_language": "English",
+                "pet_locale": "en",
+                "localization_ready": True,
+            }
+            (project / "project-spec.json").write_text(json.dumps(spec), encoding="utf-8")
+            decision = {
+                "ok": True,
+                "version": "2.0.0",
+                "pet_language": "English",
+                "pet_locale": "en",
+                "surfaces": {name: True for name in REQUIRED_SURFACES},
+                "reviewed_files": sorted(REQUIRED_FILES),
+            }
+            decision_path = project / "output" / "reviews" / "localization-decision.json"
+            decision_path.write_text(json.dumps(decision), encoding="utf-8")
+            self.assertEqual(validate_localization(project), [])
+            decision["surfaces"]["settings_panel"] = False
+            decision_path.write_text(json.dumps(decision), encoding="utf-8")
+            self.assertIn(
+                "localization surface settings_panel must be true",
+                validate_localization(project),
+            )
+
     def test_external_provider_bridge(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)

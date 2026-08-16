@@ -16,6 +16,7 @@ Do not batch the next phase while the current phase has unresolved structural de
 
 ### Gate A — source and character
 
+- the desktop-pet language was explicitly confirmed through the bilingual language gate and recorded as `pet_language` plus `pet_locale`;
 - intended subject is unambiguous;
 - character bible exists;
 - base chibi identity, clothing and shoes match visible source evidence;
@@ -105,6 +106,8 @@ Set `ok: false` when any state shows residual/double characters, root shaking, u
 
 ### Gate F — application and installer
 
+- `validate_localization.py` passes for the current version and confirmed locale;
+- all bubbles, state labels, menus, settings, tray items, accessibility labels, native permission/error copy, installer UI and bundled guides use the confirmed language without mixed fallback copy;
 - final 13-name asset contract passes `validate_pet_assets.py`;
 - project-specific PNG, ICO and ICNS icons were generated from the current user's approved standing base;
 - icon review at 256/128/64/32 px shows readable identity, complete silhouette, stable proportions and no clipping;
@@ -157,7 +160,7 @@ Test:
 - bubble stays top-right and scales with the pet;
 - native scale limits and window minimum size allow 50%, 85% and 100% exactly, and the visible `384x341` character viewport—not only the native window—matches the selected percentage;
 - the right-click menu opens above and to the right of the subject in reserved transparent space at 50%, 85% and 100%, never covers the character, preserves the character's bottom-right screen anchor and restores the original window size on close;
-- the message-reminder menu item toggles between `消息提醒：已开启` and `消息提醒：已关闭`, remains operable after Windows access is allowed, persists across restart and suppresses message animation while disabled;
+- the message-reminder menu item toggles between localized on/off labels in the confirmed language, remains operable after Windows access is allowed, persists across restart and suppresses message animation while disabled;
 - the current-version `release-quality-decision.json` passes `scripts/validate_release_review.py`;
 - 15/50/60-minute timers and 5/10-minute resets are logically separate.
 
@@ -172,9 +175,11 @@ Scaffold:
 ```powershell
 python <skill>\scripts\new_project.py `
   --out <workspace> `
-  --product-name "我的桌宠" `
+  --product-name "<localized-product-name>" `
   --slug my-photo-pet `
-  --version 1.0.0
+  --version 1.0.0 `
+  --language "<confirmed-language>" `
+  --locale <confirmed-bcp47-locale>
 ```
 
 Copy the final 13 animated assets into `public/assets/pet/integrated-v1`, validate them, then build:
@@ -184,6 +189,7 @@ python <skill>\scripts\generate_project_icons.py `
   --source <approved-standing-alpha.png> `
   --project <workspace>
 python <skill>\scripts\validate_pet_assets.py <workspace>\public\assets\pet\integrated-v1
+python <skill>\scripts\validate_localization.py --project <workspace>
 powershell -ExecutionPolicy Bypass -File <skill>\scripts\build_release.ps1 -ProjectPath <workspace>
 ```
 
@@ -223,6 +229,7 @@ Report:
 - notification permission/privacy behavior;
 - project source and animation-review locations.
 - program-icon review location and confirmation that the icon came from the approved standing base.
+- confirmed desktop-pet language/locale and localization-decision location.
 
 Do not claim “works on any computer.” State the tested target. Unsigned Windows installers may show SmartScreen; unsigned or unnotarized macOS builds may be blocked by Gatekeeper. Do not sign, notarize, upload or publish externally without explicit authorization.
 
