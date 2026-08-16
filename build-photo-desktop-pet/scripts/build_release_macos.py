@@ -13,6 +13,7 @@ import subprocess
 from pathlib import Path
 
 from validate_release_review import validate_review
+from validate_localization import validate_localization
 
 
 GUIDES = ("DESKTOP_PET_USER_GUIDE.txt", "DESKTOP_PET_STATE_TRIGGER_GUIDE.md")
@@ -91,6 +92,12 @@ def main() -> int:
     version = str(config["version"])
     spec_path = project / "project-spec.json"
     spec = load_json(spec_path) if spec_path.is_file() else {}
+    localization_errors = validate_localization(project)
+    if localization_errors:
+        raise SystemExit(
+            "Language confirmation or localization review failed: "
+            + "; ".join(localization_errors)
+        )
     if spec.get("custom_icon_ready") is not True:
         raise SystemExit(
             "Project icons still use the bundled generic chibi placeholder. "

@@ -15,6 +15,7 @@ Before any visual generation or edit, read and follow the installed `imagegen` s
 
 Read these bundled references when entering the matching phase:
 
+- Language selection and all user-visible copy: `references/localization.md`
 - Character, ImageGen, alpha and animation work: `references/visual-production.md`
 - State behavior, priorities, privacy and interaction: `references/state-runtime-contract.md`
 - Validation, packaging and handoff: `references/quality-and-delivery.md`
@@ -23,10 +24,20 @@ Read these bundled references when entering the matching phase:
 
 Do not load all references before they are needed.
 
+## Mandatory language gate
+
+Before inspecting the source, creating a project or generating any image, ask exactly this bilingual question and wait for the user's answer:
+
+> 您希望桌宠使用哪种语言？请选择：简体中文、英语或输入其他语言。  
+> Which language would you like your desktop pet to use? Please choose Simplified Chinese, English, or enter another language.
+
+Do not infer the desktop-pet language from the user's message language, operating system or region. Map Simplified Chinese to `zh-CN` and English to `en`. For “other,” obtain the exact language and a suitable BCP 47 locale; ask one short follow-up only when the requested language or regional variant is ambiguous. Confirm the resulting language and locale, record them in the project specification, and only then continue. A changed language requires re-localizing and re-validating every user-visible surface before release.
+
 ## Defaults
 
 Unless the user specifies otherwise, use:
 
+- Language: no default; require explicit confirmation through the mandatory language gate.
 - Target: Windows x64, current-user NSIS installer.
 - Product name: `我的桌宠`.
 - Style: polished warm chibi illustration preserving visible identity, morphology, markings, accessories and palette.
@@ -47,6 +58,7 @@ Create a new project-specific directory. Never write generated assets only under
 
 ```text
 <project>/
+├─ localization-plan.json
 ├─ input/                         # copied source image
 ├─ character/
 │  ├─ character-spec.md
@@ -69,19 +81,20 @@ Copy the current user's source image non-destructively. Do not include it in the
 
 ## Phase 0 — preflight
 
-1. Locate the uploaded image and inspect it with the image-viewing tool.
-2. Determine the target platform. Default to Windows x64 when unspecified. For macOS, both desktop platforms, iPhone or iPad, read `references/platform-compatibility.md`. If “Apple desktop” is ambiguous, ask whether the user means iOS/iPadOS or macOS.
-3. Run for the selected desktop target:
+1. Verify that the mandatory language gate is complete and `pet_language` plus `pet_locale` are recorded. Stop if either is missing.
+2. Locate the uploaded image and inspect it with the image-viewing tool.
+3. Determine the target platform. Default to Windows x64 when unspecified. For macOS, both desktop platforms, iPhone or iPad, read `references/platform-compatibility.md`. If “Apple desktop” is ambiguous, ask whether the user means iOS/iPadOS or macOS.
+4. Run for the selected desktop target:
 
    ```powershell
    python <skill>/scripts/check_environment.py --json --target <windows|macos>
    ```
 
-4. Confirm the generation provider. In Codex, require the built-in ImageGen tool. Outside Codex or when that tool is unavailable, explain that the user must configure an image model and API, then validate the external adapter with `external_image_provider.py --check`; do not send the photo until the user explicitly approves that provider.
-5. If Pillow alone is missing, install `scripts/requirements.txt` into the active Python environment when authorized by the task. If Node, Rust or target-native build tools are missing, continue visual/project work when useful but report that installer creation for that platform is blocked.
-6. If multiple people or animals could be the subject, ask one concise question. Otherwise choose the dominant intended subject and proceed.
-7. Create `character-spec.md` from visible facts. For a person, record hair, face, wardrobe and shoes. For an animal, record body shape, coat/feather/scale pattern, ears, muzzle/beak, paws/hooves/wings, tail and visible collar/harness. Do not guess a breed or sensitive attribute when uncertain.
-8. Record the original pose, occluded regions, identity accessories, explicit removal list and minimal-inference list. Default every character/state asset to no floor plane, cast/contact shadow or reflection in addition to the neutral-base removals.
+5. Confirm the generation provider. In Codex, require the built-in ImageGen tool. Outside Codex or when that tool is unavailable, explain that the user must configure an image model and API, then validate the external adapter with `external_image_provider.py --check`; do not send the photo until the user explicitly approves that provider.
+6. If Pillow alone is missing, install `scripts/requirements.txt` into the active Python environment when authorized by the task. If Node, Rust or target-native build tools are missing, continue visual/project work when useful but report that installer creation for that platform is blocked.
+7. If multiple people or animals could be the subject, ask one concise question. Otherwise choose the dominant intended subject and proceed.
+8. Create `character-spec.md` from visible facts. For a person, record hair, face, wardrobe and shoes. For an animal, record body shape, coat/feather/scale pattern, ears, muzzle/beak, paws/hooves/wings, tail and visible collar/harness. Do not guess a breed or sensitive attribute when uncertain.
+9. Record the original pose, occluded regions, identity accessories, explicit removal list and minimal-inference list. Default every character/state asset to no floor plane, cast/contact shadow or reflection in addition to the neutral-base removals.
 
 Success: source is inspectable, subject is unambiguous, output workspace and toolchain status are recorded.
 
@@ -165,8 +178,12 @@ python <skill>/scripts/new_project.py `
   --out <project> `
   --product-name "<name>" `
   --slug <ascii-slug> `
-  --version 1.0.0
+  --version 1.0.0 `
+  --language "<confirmed-language>" `
+  --locale <confirmed-bcp47-locale>
 ```
+
+Read `references/localization.md`, translate every required surface into the confirmed language, and write `output/reviews/localization-decision.json`. Use the selected language for animation bubbles, state labels, context and tray menus, settings, accessibility labels, permission/error notices, installer UI and both bundled guides. Do not mix Simplified Chinese or English fallback copy into another selected language.
 
 Replace the bundled generic chibi placeholder with icons derived from the current user's approved neutral standing RGBA base:
 
@@ -187,9 +204,11 @@ Run:
 ```powershell
 python <skill>/scripts/validate_pet_assets.py `
   <project>/public/assets/pet/integrated-v1
+python <skill>/scripts/validate_localization.py `
+  --project <project>
 ```
 
-Do not build while this validator reports errors or while `custom_icon_ready` is false.
+Do not build while either validator reports errors, while `custom_icon_ready` is false, or while `localization_ready` is false.
 
 Review the template's process/tool allowlists against the user's current environment. Verify time-sensitive process names locally instead of assuming old executable names remain correct. For macOS, implement or verify the macOS activity, permission and login-item adapter before claiming parity with Windows.
 
@@ -211,6 +230,7 @@ Verify in the Tauri app, not only the browser:
 - new message interrupts any state and returns to the latest valid base state;
 - repeated polling of the same state does not restart its APNG;
 - every state renders without a CSS/image-generated floor shadow or character `drop-shadow`;
+- bubbles, menus, settings, tray items, accessibility labels and permission/error messages all use the confirmed language without mixed fallback copy;
 - no CPU-heavy high-frequency scan.
 
 On macOS, separately verify the native foreground/activity adapter, Accessibility consent behavior, launch-at-login implementation and every trigger documented for the Mac build. Do not infer that a Windows hook works on macOS because the shared UI compiled.
@@ -220,6 +240,8 @@ Success: visual interaction and the requested platform's native signals behave a
 ## Phase 7 — build the release
 
 Before any release build, complete a new final review of the exact encoded assets and native runtime being shipped. Write `output/reviews/release-quality-decision.json` for the current version with all 13 states and every required check in `references/quality-and-delivery.md`. This is required on every Skill run; prior-version approval cannot be reused. The build scripts reject a missing, stale or failed decision.
+
+Also complete `output/reviews/localization-decision.json` for the current version and confirmed locale. The release builders reject missing, stale, incomplete or mixed-language localization.
 
 For Windows, run on Windows:
 
@@ -248,6 +270,8 @@ Success: each requested release folder contains its native installer, function g
 Stop rather than fabricate success when:
 
 - the subject is ambiguous;
+- the desktop-pet language has not been explicitly confirmed;
+- any user-visible surface remains in a language other than the confirmed language;
 - ImageGen is unavailable and the user has not approved its fallback;
 - the Skill runs outside Codex and no external image provider/API is configured and approved;
 - true native transparency is needed and fallback permission is absent;
@@ -264,4 +288,4 @@ Preserve completed artifacts and state the exact blocking gate and next action.
 
 ## Final handoff
 
-Lead with the platform-appropriate result. For Windows, provide the NSIS installer and SmartScreen/signing status. For macOS, provide the DMG and optional `.app`, architecture, Developer ID/signing/notarization status and any permission-dependent trigger limitations. For both, provide separate release folders and hashes. Always include the program-icon review, user guide, privacy/state guide, source project, selected image provider/model, built-in versus external mode, the current-version release-quality decision and passed gates. For iOS/iPadOS, distinguish a reusable animation asset pack from a signed app or `.ipa`; never claim a desktop installer is compatible.
+Lead with the platform-appropriate result. For Windows, provide the NSIS installer and SmartScreen/signing status. For macOS, provide the DMG and optional `.app`, architecture, Developer ID/signing/notarization status and any permission-dependent trigger limitations. For both, provide separate release folders and hashes. Always include the confirmed language/locale, localization decision, program-icon review, user guide, privacy/state guide, source project, selected image provider/model, built-in versus external mode, the current-version release-quality decision and passed gates. For iOS/iPadOS, distinguish a reusable animation asset pack from a signed app or `.ipa`; never claim a desktop installer is compatible.
