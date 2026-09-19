@@ -1,6 +1,10 @@
 ---
 name: build-photo-desktop-pet
 description: Turn one uploaded photo of a person or animal into a consistent animation-ready chibi subject, multi-view reference, 13 transparent desktop-pet states, stable 12-frame animations, and a lightweight Tauri desktop pet with Windows x64 NSIS and optional macOS app/DMG delivery. Use when a user asks to make a Q-version/cartoon desktop companion, desktop pet, alpha sprite animations, or a distributable Windows or Mac desktop installer from a human or animal image, including end-to-end generation, repair, validation, packaging, or reuse of this workflow. Route iPhone/iPad requests through the separate platform-compatibility rules.
+license: AGPL-3.0-only
+metadata:
+  author: "AI 创意研究室"
+  copyright: "Copyright (C) 2026 AI 创意研究室"
 ---
 
 # Build a photo-based Windows or macOS desktop pet

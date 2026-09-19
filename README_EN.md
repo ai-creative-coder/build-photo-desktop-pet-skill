@@ -109,3 +109,11 @@ The README files live at the repository root and are not part of the Codex Skill
 - macOS builds must be produced and verified on a Mac.
 - iPhone and iPad cannot use the desktop installer. Animation assets can be reused, but a separate signed iOS/iPadOS app is required.
 - Unsigned Windows or macOS builds may trigger operating-system security warnings.
+
+## License and Authorship
+
+Copyright (C) 2026 **AI 创意研究室**.
+
+Original content in this repository is licensed under the [GNU Affero General Public License v3.0](LICENSE) (`AGPL-3.0-only`). Use, modification, and redistribution must comply with that license, including preservation of applicable copyright and license notices. Modified versions must prominently state that they were changed and give the relevant date. Distribution, or remote network use of a modified version, must provide the corresponding source as required by AGPL-3.0.
+
+Do not remove the authorship notice and misrepresent this project or a modified version as wholly independent original work. See [NOTICE](NOTICE) for attribution and third-party-material details. AGPL-3.0 permits compliant commercial use and paid redistribution, but its attribution, same-license, and source-availability obligations still apply.

@@ -109,3 +109,11 @@ python .\build-photo-desktop-pet\scripts\external_image_provider.py --check
 - macOS 版本必须在 Mac 上构建和验证。
 - iPhone/iPad 不兼容桌面安装包；可复用动画资源，但需要单独开发并签名 iOS/iPadOS 应用。
 - 未签名的 Windows 或 macOS 构建可能触发系统安全提醒。
+
+## 许可证与作者声明
+
+Copyright (C) 2026 **AI 创意研究室**。
+
+本仓库的原创内容采用 [GNU Affero General Public License v3.0](LICENSE)（`AGPL-3.0-only`）授权。使用、修改或分发本项目时，必须遵守许可证要求，包括保留适用的版权与许可声明；修改版本须显著注明修改事实和日期；分发或通过网络向用户提供修改版本时，须按 AGPL-3.0 提供对应源代码。
+
+不得删除作者声明后将本项目或其修改版本冒充为完全独立原创。具体署名与第三方材料说明见 [NOTICE](NOTICE)。AGPL-3.0 允许合规的商业使用和收费分发，但不允许绕过其署名、同许可证和源码提供义务。
